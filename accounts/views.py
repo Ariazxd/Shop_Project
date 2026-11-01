@@ -30,3 +30,11 @@ class SignInView(APIView):
         user = serializer.validated_data["user"]
         token, _ = Token.objects.get_or_create(user=user)
         return Response({"token": token.key, "username": user.username})
+
+
+class SignOutView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        Token.objects.filter(user=request.user).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
