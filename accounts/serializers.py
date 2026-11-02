@@ -71,6 +71,14 @@ class ProfileSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("created_at", "updated_at")
 
+    def validate_email(self, value):
+        qs = User.objects.filter(email__iexact=value)
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.user_id)
+        if qs.exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
+
     def update(self, instance, validated_data):
         user_data = validated_data.pop("user", {})
         if user_data:
