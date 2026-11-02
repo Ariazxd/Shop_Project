@@ -3,7 +3,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .serializers import SignInSerializer, SignUpSerializer
+from .serializers import ProfileSerializer, SignInSerializer, SignUpSerializer
 
 
 class SignUpView(generics.CreateAPIView):
@@ -38,3 +38,17 @@ class SignOutView(APIView):
     def post(self, request):
         Token.objects.filter(user=request.user).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ProfileView(generics.RetrieveUpdateAPIView):
+    """
+    Detail / update for the *current* user's profile.
+    There is intentionally no list endpoint.
+    Create happens automatically on sign up (post_save signal).
+    """
+
+    serializer_class = ProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user.profile
