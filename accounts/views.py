@@ -40,9 +40,9 @@ class SignOutView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ProfileView(generics.RetrieveUpdateAPIView):
+class ProfileView(generics.RetrieveUpdateDestroyAPIView):
     """
-    Detail / update for the *current* user's profile.
+    Detail / update / delete for the *current* user's profile.
     There is intentionally no list endpoint.
     Create happens automatically on sign up (post_save signal).
     """
@@ -52,3 +52,8 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user.profile
+
+    def destroy(self, request, *args, **kwargs):
+        # Deleting the profile deletes the account (profile cascades with the user).
+        request.user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
