@@ -1,7 +1,17 @@
 from rest_framework import mixins, viewsets
 
-from .models import Product
-from .serializers import ProductDetailSerializer, ProductListSerializer
+from .models import Category, Product
+from .serializers import (
+    CategorySerializer,
+    ProductDetailSerializer,
+    ProductListSerializer,
+)
+
+
+class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    pagination_class = None
 
 
 class ProductViewSet(
