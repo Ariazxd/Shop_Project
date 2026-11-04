@@ -8,7 +8,13 @@ class ProductFilter(django_filters.FilterSet):
     max_price = django_filters.NumberFilter(field_name="price", lookup_expr="lte")
     category = django_filters.NumberFilter(field_name="category_id")
     category_slug = django_filters.CharFilter(field_name="category__slug")
+    in_stock = django_filters.BooleanFilter(method="filter_in_stock")
 
     class Meta:
         model = Product
-        fields = ["category", "category_slug", "min_price", "max_price"]
+        fields = ["category", "category_slug", "min_price", "max_price", "in_stock"]
+
+    def filter_in_stock(self, queryset, name, value):
+        if value is None:
+            return queryset
+        return queryset.filter(stock__gt=0) if value else queryset.filter(stock=0)
