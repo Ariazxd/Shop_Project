@@ -19,6 +19,17 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 
 class ProductViewSet(viewsets.ModelViewSet):
+    """
+    list     GET    /api/products/            (search + filter + ordering)
+    retrieve GET    /api/products/<id>/       (product detail)
+    create   POST   /api/products/            (staff only)
+    update   PUT/PATCH /api/products/<id>/    (staff only)
+    destroy  DELETE /api/products/<id>/       (staff only)
+
+    Query params: ?search=  ?category=  ?category_slug=  ?min_price=  ?max_price=
+                  ?in_stock=true|false  ?ordering=price|-price|created_at|-created_at
+    """
+
     permission_classes = [IsAdminOrReadOnly]
     filterset_class = ProductFilter
     search_fields = ["name", "description", "category__name"]
