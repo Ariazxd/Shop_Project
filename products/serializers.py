@@ -19,6 +19,9 @@ class ProductListSerializer(serializers.ModelSerializer):
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), source="category", write_only=True
+    )
     in_stock = serializers.BooleanField(read_only=True)
 
     class Meta:
@@ -32,6 +35,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "in_stock",
             "is_active",
             "category",
+            "category_id",
             "created_at",
             "updated_at",
         )

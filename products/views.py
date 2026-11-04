@@ -1,6 +1,7 @@
-from rest_framework import mixins, viewsets
+from rest_framework import viewsets
 
 from .models import Category, Product
+from .permissions import IsAdminOrReadOnly
 from .serializers import (
     CategorySerializer,
     ProductDetailSerializer,
@@ -8,17 +9,22 @@ from .serializers import (
 )
 
 
-class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [IsAdminOrReadOnly]
     pagination_class = None
 
 
-class ProductViewSet(
-    mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
-):
+class ProductViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminOrReadOnly]
+
     def get_queryset(self):
-        return Product.objects.select_related("category").filter(is_active=True)
+        qs = Product.objects.select_related("category")
+        user = self.request.user
+        if not (user and user.is_staff):
+            qs = qs.filter(is_active=True)
+        return qs
 
     def get_serializer_class(self):
         if self.action == "list":
