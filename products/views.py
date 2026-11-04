@@ -1,5 +1,6 @@
 from rest_framework import viewsets
 
+from .filters import ProductFilter
 from .models import Category, Product
 from .permissions import IsAdminOrReadOnly
 from .serializers import (
@@ -19,6 +20,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
+    filterset_class = ProductFilter
     search_fields = ["name", "description", "category__name"]
 
     def get_queryset(self):
