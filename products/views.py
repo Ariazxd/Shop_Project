@@ -22,6 +22,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
     filterset_class = ProductFilter
     search_fields = ["name", "description", "category__name"]
+    ordering_fields = ["price", "created_at", "name"]
 
     def get_queryset(self):
         qs = Product.objects.select_related("category")
