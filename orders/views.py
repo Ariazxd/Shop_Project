@@ -1,9 +1,14 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Basket, BasketItem
-from .serializers import AddToBasketSerializer, BasketSerializer
+from .serializers import (
+    AddToBasketSerializer,
+    BasketSerializer,
+    UpdateBasketItemSerializer,
+)
 
 
 def get_basket(user):
@@ -49,3 +54,36 @@ class BasketItemAddView(APIView):
         else:
             BasketItem.objects.create(basket=basket, product=product, quantity=quantity)
         return Response(BasketSerializer(basket).data, status=status.HTTP_201_CREATED)
+
+
+class BasketItemDetailView(APIView):
+    """PATCH {quantity}: change quantity. DELETE: remove item."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_item(self, request, pk):
+        return get_object_or_404(
+            BasketItem.objects.select_related("product"),
+            pk=pk,
+            basket__user=request.user,
+        )
+
+    def patch(self, request, pk):
+        item = self.get_item(request, pk)
+        serializer = UpdateBasketItemSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        quantity = serializer.validated_data["quantity"]
+        if quantity > item.product.stock:
+            return Response(
+                {"detail": f"Only {item.product.stock} unit(s) in stock."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        item.quantity = quantity
+        item.save()
+        return Response(BasketSerializer(item.basket).data)
+
+    def delete(self, request, pk):
+        item = self.get_item(request, pk)
+        basket = item.basket
+        item.delete()
+        return Response(BasketSerializer(basket).data)

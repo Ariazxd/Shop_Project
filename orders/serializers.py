@@ -31,3 +31,7 @@ class AddToBasketSerializer(serializers.Serializer):
         queryset=Product.objects.filter(is_active=True), source="product"
     )
     quantity = serializers.IntegerField(min_value=1, default=1)
+
+
+class UpdateBasketItemSerializer(serializers.Serializer):
+    quantity = serializers.IntegerField(min_value=1)
