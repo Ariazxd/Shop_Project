@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from products.models import Product
+
 from .models import Basket, BasketItem
 
 
@@ -22,3 +24,10 @@ class BasketSerializer(serializers.ModelSerializer):
     class Meta:
         model = Basket
         fields = ("items", "total_items", "total_price")
+
+
+class AddToBasketSerializer(serializers.Serializer):
+    product_id = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.filter(is_active=True), source="product"
+    )
+    quantity = serializers.IntegerField(min_value=1, default=1)
