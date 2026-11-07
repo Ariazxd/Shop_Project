@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from products.models import Product
 
-from .models import Basket, BasketItem
+from .models import Basket, BasketItem, Order, OrderItem
 
 
 class BasketItemSerializer(serializers.ModelSerializer):
@@ -35,3 +35,19 @@ class AddToBasketSerializer(serializers.Serializer):
 
 class UpdateBasketItemSerializer(serializers.Serializer):
     quantity = serializers.IntegerField(min_value=1)
+
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    line_total = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = OrderItem
+        fields = ("product_id", "product_name", "unit_price", "quantity", "line_total")
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = ("id", "status", "total_price", "items", "created_at")

@@ -1,12 +1,13 @@
 from django.shortcuts import get_object_or_404
-from rest_framework import permissions, status
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Basket, BasketItem
+from .models import Basket, BasketItem, Order
 from .serializers import (
     AddToBasketSerializer,
     BasketSerializer,
+    OrderSerializer,
     UpdateBasketItemSerializer,
 )
 
@@ -87,3 +88,21 @@ class BasketItemDetailView(APIView):
         basket = item.basket
         item.delete()
         return Response(BasketSerializer(basket).data)
+
+
+class OrderListCreateView(generics.ListAPIView):
+    """GET /api/orders/ -> my orders."""
+
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).prefetch_related("items")
+
+
+class OrderDetailView(generics.RetrieveAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).prefetch_related("items")
