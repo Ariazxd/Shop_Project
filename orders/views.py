@@ -1,12 +1,16 @@
+from django.db import transaction
 from django.shortcuts import get_object_or_404
-from rest_framework import permissions, status
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Basket, BasketItem
+from products.models import Product
+
+from .models import Basket, BasketItem, Order, OrderItem
 from .serializers import (
     AddToBasketSerializer,
     BasketSerializer,
+    OrderSerializer,
     UpdateBasketItemSerializer,
 )
 
@@ -87,3 +91,67 @@ class BasketItemDetailView(APIView):
         basket = item.basket
         item.delete()
         return Response(BasketSerializer(basket).data)
+
+
+class OrderListCreateView(generics.ListCreateAPIView):
+    """
+    GET  /api/orders/  -> my orders
+    POST /api/orders/  -> purchase: turn the basket into a pending order.
+    Stock is reserved here and released again if the payment fails.
+    """
+
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).prefetch_related("items")
+
+    def create(self, request, *args, **kwargs):
+        basket = get_basket(request.user)
+        basket_items = list(basket.items.select_related("product"))
+        if not basket_items:
+            return Response(
+                {"detail": "Your basket is empty."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        with transaction.atomic():
+            # Lock product rows so two buyers can't take the last unit together.
+            products = {
+                p.pk: p
+                for p in Product.objects.select_for_update().filter(
+                    pk__in=[i.product_id for i in basket_items]
+                )
+            }
+            for item in basket_items:
+                product = products[item.product_id]
+                if not product.is_active or product.stock < item.quantity:
+                    return Response(
+                        {"detail": f"'{product.name}' is not available in the requested quantity."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            order = Order.objects.create(
+                user=request.user,
+                total_price=sum(i.quantity * products[i.product_id].price for i in basket_items),
+            )
+            for item in basket_items:
+                product = products[item.product_id]
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    product_name=product.name,
+                    unit_price=product.price,
+                    quantity=item.quantity,
+                )
+                product.stock -= item.quantity
+                product.save(update_fields=["stock"])
+
+        return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+
+
+class OrderDetailView(generics.RetrieveAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).prefetch_related("items")
