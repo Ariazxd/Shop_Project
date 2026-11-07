@@ -4,6 +4,8 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from products.models import Product
+
 from .models import Basket, BasketItem, Order, OrderItem
 from .serializers import (
     AddToBasketSerializer,
@@ -113,8 +115,15 @@ class OrderListCreateView(generics.ListCreateAPIView):
             )
 
         with transaction.atomic():
+            # Lock product rows so two buyers can't take the last unit together.
+            products = {
+                p.pk: p
+                for p in Product.objects.select_for_update().filter(
+                    pk__in=[i.product_id for i in basket_items]
+                )
+            }
             for item in basket_items:
-                product = item.product
+                product = products[item.product_id]
                 if not product.is_active or product.stock < item.quantity:
                     return Response(
                         {"detail": f"'{product.name}' is not available in the requested quantity."},
@@ -123,10 +132,10 @@ class OrderListCreateView(generics.ListCreateAPIView):
 
             order = Order.objects.create(
                 user=request.user,
-                total_price=sum(i.line_total for i in basket_items),
+                total_price=sum(i.quantity * products[i.product_id].price for i in basket_items),
             )
             for item in basket_items:
-                product = item.product
+                product = products[item.product_id]
                 OrderItem.objects.create(
                     order=order,
                     product=product,
