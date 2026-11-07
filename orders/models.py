@@ -40,3 +40,40 @@ class BasketItem(models.Model):
     @property
     def line_total(self):
         return self.quantity * self.product.price
+
+
+class Order(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending payment"
+        PAID = "paid", "Paid"
+        FAILED = "failed", "Failed"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="orders"
+    )
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.PENDING
+    )
+    total_price = models.PositiveIntegerField(help_text="Toman")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"Order #{self.pk} ({self.status})"
+
+
+class OrderItem(models.Model):
+    """Snapshot of a purchased product (name/price may change later)."""
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
+    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    product_name = models.CharField(max_length=200)
+    unit_price = models.PositiveIntegerField()
+    quantity = models.PositiveIntegerField()
+
+    @property
+    def line_total(self):
+        return self.unit_price * self.quantity
