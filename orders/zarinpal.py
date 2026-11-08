@@ -49,3 +49,19 @@ def request_payment(amount_rial, description, callback_url):
         raise ZarinpalError(f"Payment request rejected: {errors or data}")
     authority = data["authority"]
     return authority, f"{_base_url()}/pg/StartPay/{authority}"
+
+
+def verify_payment(amount_rial, authority):
+    """Verify a payment. Returns ref_id on success, raises ZarinpalError otherwise."""
+    data, errors = _post(
+        "/pg/v4/payment/verify.json",
+        {
+            "merchant_id": settings.ZARINPAL_MERCHANT_ID,
+            "amount": amount_rial,
+            "authority": authority,
+        },
+    )
+    # 100 = verified now, 101 = was already verified before
+    if data.get("code") not in (100, 101):
+        raise ZarinpalError(f"Payment verification failed: {errors or data}")
+    return str(data.get("ref_id", ""))
