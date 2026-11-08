@@ -93,3 +93,13 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
 }
+
+# ---- Zarinpal (sandbox) ----
+ZARINPAL_SANDBOX = os.environ.get("ZARINPAL_SANDBOX", "1") == "1"
+# Any UUID-shaped value works in the sandbox.
+ZARINPAL_MERCHANT_ID = os.environ.get(
+    "ZARINPAL_MERCHANT_ID", "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+)
+ZARINPAL_CALLBACK_URL = os.environ.get(
+    "ZARINPAL_CALLBACK_URL", "http://127.0.0.1:8000/api/payments/verify/"
+)
