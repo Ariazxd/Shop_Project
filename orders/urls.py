@@ -8,10 +8,11 @@ from .views import (
     OrderListCreateView,
 )
 
-from .payment_views import PayOrderView
+from .payment_views import PayOrderView, VerifyPaymentView
 
 urlpatterns = [
     path("orders/<int:pk>/pay/", PayOrderView.as_view(), name="order-pay"),
+    path("payments/verify/", VerifyPaymentView.as_view(), name="payment-verify"),
     path("basket/", BasketView.as_view(), name="basket"),
     path("basket/items/", BasketItemAddView.as_view(), name="basket-item-add"),
     path("basket/items/<int:pk>/", BasketItemDetailView.as_view(), name="basket-item-detail"),
