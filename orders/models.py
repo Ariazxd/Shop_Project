@@ -77,3 +77,23 @@ class OrderItem(models.Model):
     @property
     def line_total(self):
         return self.unit_price * self.quantity
+
+
+class Payment(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        PAID = "paid", "Paid"
+        FAILED = "failed", "Failed"
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="payments")
+    authority = models.CharField(max_length=64, unique=True)
+    amount = models.PositiveIntegerField(help_text="Rial (Toman x 10)")
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.PENDING
+    )
+    ref_id = models.CharField(max_length=64, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Payment {self.authority} ({self.status})"
