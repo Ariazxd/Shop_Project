@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from products.models import Product
 
 from . import zarinpal
-from .models import Order, Payment
+from .models import Basket, Order, Payment
 
 
 class PayOrderView(APIView):
@@ -83,6 +83,10 @@ class VerifyPaymentView(APIView):
             payment.save(update_fields=["status", "ref_id", "updated_at"])
             order.status = Order.Status.PAID
             order.save(update_fields=["status", "updated_at"])
+            # Purchase done -> empty the buyer's basket.
+            basket = Basket.objects.filter(user=order.user).first()
+            if basket:
+                basket.items.all().delete()
 
         return Response(
             {"detail": "Payment successful.", "order_id": order.pk, "ref_id": ref_id}
