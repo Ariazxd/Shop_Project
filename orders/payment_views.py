@@ -5,6 +5,8 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from products.models import Product
+
 from . import zarinpal
 from .models import Order, Payment
 
@@ -88,10 +90,15 @@ class VerifyPaymentView(APIView):
 
     @staticmethod
     def _fail(payment):
-        """Mark the payment and its order as failed."""
+        """Mark payment/order failed and give the reserved stock back."""
         with transaction.atomic():
             payment.status = Payment.Status.FAILED
             payment.save(update_fields=["status", "updated_at"])
-            order = payment.order
-            order.status = Order.Status.FAILED
-            order.save(update_fields=["status", "updated_at"])
+            order = Order.objects.select_for_update().get(pk=payment.order_id)
+            if order.status == Order.Status.PENDING:
+                for item in order.items.select_related("product"):
+                    product = Product.objects.select_for_update().get(pk=item.product_id)
+                    product.stock += item.quantity
+                    product.save(update_fields=["stock"])
+                order.status = Order.Status.FAILED
+                order.save(update_fields=["status", "updated_at"])
