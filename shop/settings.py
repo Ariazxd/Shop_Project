@@ -96,9 +96,11 @@ REST_FRAMEWORK = {
 
 # ---- Zarinpal (sandbox) ----
 ZARINPAL_SANDBOX = os.environ.get("ZARINPAL_SANDBOX", "1") == "1"
-# Any UUID-shaped value works in the sandbox.
+# In the sandbox the merchant id can be any random UUID v4 (it must be a valid
+# UUID, so the old "xxxxxxxx-..." placeholder was not safe). Sandbox authorities
+# start with "S"; sandbox URL: https://sandbox.zarinpal.com
 ZARINPAL_MERCHANT_ID = os.environ.get(
-    "ZARINPAL_MERCHANT_ID", "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    "ZARINPAL_MERCHANT_ID", "6f1c2d3e-4a5b-4c6d-8e7f-9a0b1c2d3e4f"
 )
 ZARINPAL_CALLBACK_URL = os.environ.get(
     "ZARINPAL_CALLBACK_URL", "http://127.0.0.1:8000/api/payments/verify/"
