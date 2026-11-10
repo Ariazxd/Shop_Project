@@ -4,7 +4,9 @@ A Django REST Framework shop backend. API only, no templates / no frontend.
 
 ## Features
 
-- Sign up / sign in / sign out (token authentication)
+- Sign up / sign in / sign out (token authentication) and JWT login with refresh
+- Interactive API docs: Swagger UI and ReDoc (OpenAPI schema)
+- All endpoints are versioned under `/api/v1/`
 - Profile: detail, update, delete (no list endpoint)
 - Products: list, detail, create, update, delete (write access: staff only)
 - Search, filter and ordering on the product list
@@ -25,6 +27,9 @@ python manage.py migrate
 python manage.py seed_data         # demo data, see "Demo data" below
 python manage.py runserver
 ```
+
+Then open <http://127.0.0.1:8000/swagger/> (or `/redoc/`) for the API docs. The raw
+OpenAPI schema is at `/schema/`.
 
 Optional environment variables: `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`,
 `ZARINPAL_MERCHANT_ID`, `ZARINPAL_CALLBACK_URL`, `ZARINPAL_SANDBOX` (default `1`).
@@ -71,13 +76,19 @@ No money is moved in the sandbox:
 
 ## Endpoints
 
-Authenticated requests send the header `Authorization: Token <token>`.
+Authenticated requests send one of these headers:
+
+- `Authorization: Bearer <access>`: JWT from `/api/v1/auth/token/` (access lives 30 minutes,
+  refresh 7 days)
+- `Authorization: Token <token>`: the token returned by signup / signin
 
 | Method | URL | Notes |
 |---|---|---|
 | POST | `/api/v1/auth/signup/` | `username, email, password, password2` -> token |
 | POST | `/api/v1/auth/signin/` | `username, password` -> token |
 | POST | `/api/v1/auth/signout/` | deletes the token |
+| POST | `/api/v1/auth/token/` | `username, password` -> JWT `access` and `refresh` |
+| POST | `/api/v1/auth/token/refresh/` | `refresh` -> new `access` |
 | GET / PUT / PATCH / DELETE | `/api/v1/profile/` | current user's profile (DELETE removes the account) |
 | GET | `/api/v1/products/` | list; `?search= &category= &category_slug= &min_price= &max_price= &in_stock= &ordering=` |
 | GET | `/api/v1/products/<id>/` | product detail |
@@ -99,6 +110,8 @@ Authenticated requests send the header `Authorization: Token <token>`.
 4. Zarinpal redirects to `/api/v1/payments/verify/`. On success the order becomes
    `paid` and the basket is emptied; on failure the order becomes `failed` and the
    reserved stock is released.
+
+If you override `ZARINPAL_CALLBACK_URL`, it must now point to `/api/v1/payments/verify/`.
 
 Prices are stored in Toman; they are multiplied by 10 for Zarinpal (Rial).
 
