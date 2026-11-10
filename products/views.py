@@ -20,11 +20,11 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 class ProductViewSet(viewsets.ModelViewSet):
     """
-    list     GET    /api/products/            (search + filter + ordering)
-    retrieve GET    /api/products/<id>/       (product detail)
-    create   POST   /api/products/            (staff only)
-    update   PUT/PATCH /api/products/<id>/    (staff only)
-    destroy  DELETE /api/products/<id>/       (staff only)
+    list     GET    /api/v1/products/            (search + filter + ordering)
+    retrieve GET    /api/v1/products/<id>/       (product detail)
+    create   POST   /api/v1/products/            (staff only)
+    update   PUT/PATCH /api/v1/products/<id>/    (staff only)
+    destroy  DELETE /api/v1/products/<id>/       (staff only)
 
     Query params: ?search=  ?category=  ?category_slug=  ?min_price=  ?max_price=
                   ?in_stock=true|false  ?ordering=price|-price|created_at|-created_at

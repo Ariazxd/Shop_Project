@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -18,6 +19,8 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "django_filters",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",  # serves the Swagger/ReDoc assets locally (no CDN)
     # local apps
     "accounts",
     "products",
@@ -77,7 +80,9 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
+    # "Authorization: Bearer <jwt>" and the old "Authorization: Token <key>" both work.
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.TokenAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
@@ -90,8 +95,27 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Shop API",
+    "DESCRIPTION": (
+        "Shop backend: accounts, products, basket, orders and Zarinpal (sandbox) "
+        "payment. Authorize with 'Bearer <access jwt>' or 'Token <key>'."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    "REDOC_DIST": "SIDECAR",
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
 
 # ---- Zarinpal (sandbox) ----
@@ -103,5 +127,5 @@ ZARINPAL_MERCHANT_ID = os.environ.get(
     "ZARINPAL_MERCHANT_ID", "6f1c2d3e-4a5b-4c6d-8e7f-9a0b1c2d3e4f"
 )
 ZARINPAL_CALLBACK_URL = os.environ.get(
-    "ZARINPAL_CALLBACK_URL", "http://127.0.0.1:8000/api/payments/verify/"
+    "ZARINPAL_CALLBACK_URL", "http://127.0.0.1:8000/api/v1/payments/verify/"
 )

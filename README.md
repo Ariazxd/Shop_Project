@@ -4,7 +4,9 @@ A Django REST Framework shop backend. API only, no templates / no frontend.
 
 ## Features
 
-- Sign up / sign in / sign out (token authentication)
+- Sign up / sign in / sign out (token authentication) and JWT login with refresh
+- Interactive API docs: Swagger UI and ReDoc (OpenAPI schema)
+- All endpoints are versioned under `/api/v1/`
 - Profile: detail, update, delete (no list endpoint)
 - Products: list, detail, create, update, delete (write access: staff only)
 - Search, filter and ordering on the product list
@@ -25,6 +27,9 @@ python manage.py migrate
 python manage.py seed_data         # demo data, see "Demo data" below
 python manage.py runserver
 ```
+
+Then open <http://127.0.0.1:8000/swagger/> (or `/redoc/`) for the API docs. The raw
+OpenAPI schema is at `/schema/`.
 
 Optional environment variables: `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`,
 `ZARINPAL_MERCHANT_ID`, `ZARINPAL_CALLBACK_URL`, `ZARINPAL_SANDBOX` (default `1`).
@@ -67,38 +72,46 @@ No money is moved in the sandbox:
 - `ZARINPAL_MERCHANT_ID` can be any valid random UUID v4 (a default is provided).
 - Every authority returned by the sandbox starts with `S`.
 - Open the returned `payment_url` in a browser; Zarinpal then redirects to
-  `ZARINPAL_CALLBACK_URL` (`/api/payments/verify/`) with `Authority` and `Status`.
+  `ZARINPAL_CALLBACK_URL` (`/api/v1/payments/verify/`) with `Authority` and `Status`.
 
 ## Endpoints
 
-Authenticated requests send the header `Authorization: Token <token>`.
+Authenticated requests send one of these headers:
+
+- `Authorization: Bearer <access>`: JWT from `/api/v1/auth/token/` (access lives 30 minutes,
+  refresh 7 days)
+- `Authorization: Token <token>`: the token returned by signup / signin
 
 | Method | URL | Notes |
 |---|---|---|
-| POST | `/api/auth/signup/` | `username, email, password, password2` -> token |
-| POST | `/api/auth/signin/` | `username, password` -> token |
-| POST | `/api/auth/signout/` | deletes the token |
-| GET / PUT / PATCH / DELETE | `/api/profile/` | current user's profile (DELETE removes the account) |
-| GET | `/api/products/` | list; `?search= &category= &category_slug= &min_price= &max_price= &in_stock= &ordering=` |
-| GET | `/api/products/<id>/` | product detail |
-| POST / PUT / PATCH / DELETE | `/api/products/...` | staff only |
-| GET | `/api/categories/` | category list |
-| GET / DELETE | `/api/basket/` | show / empty basket |
-| POST | `/api/basket/items/` | `product_id, quantity` |
-| PATCH / DELETE | `/api/basket/items/<id>/` | change quantity / remove item |
-| GET / POST | `/api/orders/` | my orders / purchase (creates order from basket) |
-| GET | `/api/orders/<id>/` | order detail |
-| POST | `/api/orders/<id>/pay/` | returns `payment_url` (Zarinpal sandbox) |
-| GET | `/api/payments/verify/` | Zarinpal callback (`Authority`, `Status`) |
+| POST | `/api/v1/auth/signup/` | `username, email, password, password2` -> token |
+| POST | `/api/v1/auth/signin/` | `username, password` -> token |
+| POST | `/api/v1/auth/signout/` | deletes the token |
+| POST | `/api/v1/auth/token/` | `username, password` -> JWT `access` and `refresh` |
+| POST | `/api/v1/auth/token/refresh/` | `refresh` -> new `access` |
+| GET / PUT / PATCH / DELETE | `/api/v1/profile/` | current user's profile (DELETE removes the account) |
+| GET | `/api/v1/products/` | list; `?search= &category= &category_slug= &min_price= &max_price= &in_stock= &ordering=` |
+| GET | `/api/v1/products/<id>/` | product detail |
+| POST / PUT / PATCH / DELETE | `/api/v1/products/...` | staff only |
+| GET | `/api/v1/categories/` | category list |
+| GET / DELETE | `/api/v1/basket/` | show / empty basket |
+| POST | `/api/v1/basket/items/` | `product_id, quantity` |
+| PATCH / DELETE | `/api/v1/basket/items/<id>/` | change quantity / remove item |
+| GET / POST | `/api/v1/orders/` | my orders / purchase (creates order from basket) |
+| GET | `/api/v1/orders/<id>/` | order detail |
+| POST | `/api/v1/orders/<id>/pay/` | returns `payment_url` (Zarinpal sandbox) |
+| GET | `/api/v1/payments/verify/` | Zarinpal callback (`Authority`, `Status`) |
 
 ## Purchase flow
 
-1. `POST /api/basket/items/` to fill the basket.
-2. `POST /api/orders/` creates a pending order and reserves the stock.
-3. `POST /api/orders/<id>/pay/` returns `payment_url`; open it in a browser.
-4. Zarinpal redirects to `/api/payments/verify/`. On success the order becomes
+1. `POST /api/v1/basket/items/` to fill the basket.
+2. `POST /api/v1/orders/` creates a pending order and reserves the stock.
+3. `POST /api/v1/orders/<id>/pay/` returns `payment_url`; open it in a browser.
+4. Zarinpal redirects to `/api/v1/payments/verify/`. On success the order becomes
    `paid` and the basket is emptied; on failure the order becomes `failed` and the
    reserved stock is released.
+
+If you override `ZARINPAL_CALLBACK_URL`, it must now point to `/api/v1/payments/verify/`.
 
 Prices are stored in Toman; they are multiplied by 10 for Zarinpal (Rial).
 

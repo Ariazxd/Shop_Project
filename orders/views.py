@@ -1,5 +1,6 @@
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -25,9 +26,11 @@ class BasketView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(responses=BasketSerializer)
     def get(self, request):
         return Response(BasketSerializer(get_basket(request.user)).data)
 
+    @extend_schema(responses={204: None})
     def delete(self, request):
         get_basket(request.user).items.all().delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -38,6 +41,7 @@ class BasketItemAddView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(request=AddToBasketSerializer, responses={201: BasketSerializer})
     def post(self, request):
         serializer = AddToBasketSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -72,6 +76,7 @@ class BasketItemDetailView(APIView):
             basket__user=request.user,
         )
 
+    @extend_schema(request=UpdateBasketItemSerializer, responses=BasketSerializer)
     def patch(self, request, pk):
         item = self.get_item(request, pk)
         serializer = UpdateBasketItemSerializer(data=request.data)
@@ -86,6 +91,7 @@ class BasketItemDetailView(APIView):
         item.save()
         return Response(BasketSerializer(item.basket).data)
 
+    @extend_schema(request=None, responses=BasketSerializer)
     def delete(self, request, pk):
         item = self.get_item(request, pk)
         basket = item.basket
@@ -95,8 +101,8 @@ class BasketItemDetailView(APIView):
 
 class OrderListCreateView(generics.ListCreateAPIView):
     """
-    GET  /api/orders/  -> my orders
-    POST /api/orders/  -> purchase: turn the basket into a pending order.
+    GET  /api/v1/orders/  -> my orders
+    POST /api/v1/orders/  -> purchase: turn the basket into a pending order.
     Stock is reserved here and released again if the payment fails.
     """
 
@@ -106,6 +112,7 @@ class OrderListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user).prefetch_related("items")
 
+    @extend_schema(request=None, responses={201: OrderSerializer})
     def create(self, request, *args, **kwargs):
         basket = get_basket(request.user)
         basket_items = list(basket.items.select_related("product"))
