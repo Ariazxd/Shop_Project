@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import transaction
-from rest_framework import permissions, status
+from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import permissions, serializers, status
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,11 +12,30 @@ from . import zarinpal
 from .models import Basket, Order, Payment
 
 
+DetailResponse = inline_serializer("DetailResponse", {"detail": serializers.CharField()})
+PayOrderResponse = inline_serializer(
+    "PayOrderResponse",
+    {"authority": serializers.CharField(), "payment_url": serializers.URLField()},
+)
+VerifyPaymentResponse = inline_serializer(
+    "VerifyPaymentResponse",
+    {
+        "detail": serializers.CharField(),
+        "order_id": serializers.IntegerField(),
+        "ref_id": serializers.CharField(required=False),
+    },
+)
+
+
 class PayOrderView(APIView):
     """POST /api/v1/orders/<id>/pay/ -> returns the Zarinpal URL the user must open."""
 
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        request=None,
+        responses={200: PayOrderResponse, 400: DetailResponse, 502: DetailResponse},
+    )
     def post(self, request, pk):
         order = get_object_or_404(Order, pk=pk, user=request.user)
         if order.status != Order.Status.PENDING:
@@ -48,6 +68,13 @@ class VerifyPaymentView(APIView):
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("Authority", str, description="Authority returned by /pay/"),
+            OpenApiParameter("Status", str, description="OK or NOK (sent by Zarinpal)"),
+        ],
+        responses={200: VerifyPaymentResponse, 400: VerifyPaymentResponse},
+    )
     def get(self, request):
         authority = request.query_params.get("Authority", "")
         callback_status = request.query_params.get("Status", "")
