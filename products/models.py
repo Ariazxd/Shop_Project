@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -34,3 +35,26 @@ class Product(models.Model):
     @property
     def in_stock(self):
         return self.stock > 0
+
+
+class Favorite(models.Model):
+    """A product a user has marked as favorite (one row per user and product)."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="favorites"
+    )
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="favorited_by"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "product"], name="unique_favorite_per_user"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} likes {self.product.name}"
