@@ -12,7 +12,7 @@ from .models import Basket, Order, Payment
 
 
 class PayOrderView(APIView):
-    """POST /api/orders/<id>/pay/ -> returns the Zarinpal URL the user must open."""
+    """POST /api/v1/orders/<id>/pay/ -> returns the Zarinpal URL the user must open."""
 
     permission_classes = [permissions.IsAuthenticated]
 
@@ -40,7 +40,7 @@ class PayOrderView(APIView):
 
 class VerifyPaymentView(APIView):
     """
-    Zarinpal redirects the browser here: /api/payments/verify/?Authority=...&Status=OK|NOK
+    Zarinpal redirects the browser here: /api/v1/payments/verify/?Authority=...&Status=OK|NOK
     No token is sent by the browser redirect, so this endpoint is public; it is safe
     because it only trusts the result that Zarinpal's verify API returns.
     """

@@ -103,5 +103,5 @@ ZARINPAL_MERCHANT_ID = os.environ.get(
     "ZARINPAL_MERCHANT_ID", "6f1c2d3e-4a5b-4c6d-8e7f-9a0b1c2d3e4f"
 )
 ZARINPAL_CALLBACK_URL = os.environ.get(
-    "ZARINPAL_CALLBACK_URL", "http://127.0.0.1:8000/api/payments/verify/"
+    "ZARINPAL_CALLBACK_URL", "http://127.0.0.1:8000/api/v1/payments/verify/"
 )

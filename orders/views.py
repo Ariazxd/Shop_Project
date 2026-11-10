@@ -95,8 +95,8 @@ class BasketItemDetailView(APIView):
 
 class OrderListCreateView(generics.ListCreateAPIView):
     """
-    GET  /api/orders/  -> my orders
-    POST /api/orders/  -> purchase: turn the basket into a pending order.
+    GET  /api/v1/orders/  -> my orders
+    POST /api/v1/orders/  -> purchase: turn the basket into a pending order.
     Stock is reserved here and released again if the payment fails.
     """
 
