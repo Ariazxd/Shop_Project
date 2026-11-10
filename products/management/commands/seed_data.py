@@ -1,13 +1,15 @@
 import random
-from datetime import date
+from datetime import date, timedelta
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils import timezone
 from django.utils.text import slugify
 
 from accounts.models import Profile
+from orders.models import Basket, BasketItem, Order, OrderItem
 from products.models import Category, Product
 
 CATALOG = {
@@ -56,18 +58,35 @@ TEST_USERS = [
     },
 ]
 
+# Demo orders for user2: (status, number of different products, days ago).
+# Payment records are NOT seeded on purpose: authorities must come from the real
+# Zarinpal sandbox flow (basket -> purchase -> pay -> verify).
+ORDER_PLANS = [
+    (Order.Status.PAID, 2, 5),
+    (Order.Status.FAILED, 2, 3),
+    (Order.Status.PENDING, 1, 0),
+]
+
 
 class Command(BaseCommand):
     help = (
-        "Seed the database with demo categories, products, an admin user and "
-        "test users with filled profiles. Development only."
+        "Seed the database with demo categories, products, an admin user, test "
+        "users with filled profiles, a basket and orders. Development only."
     )
 
     def add_arguments(self, parser):
         parser.add_argument(
             "--clear",
             action="store_true",
-            help="Delete existing products, categories and the seeded test users first.",
+            help=(
+                "Delete existing orders, products, categories and the seeded test "
+                "users first."
+            ),
+        )
+        parser.add_argument(
+            "--no-orders",
+            action="store_true",
+            help="Seed test users and profiles, but no basket and no orders.",
         )
         parser.add_argument(
             "--minimal",
@@ -102,7 +121,11 @@ class Command(BaseCommand):
                 )
             )
         else:
-            seeded_users = len(self._seed_test_users(options["user_password"]))
+            users = self._seed_test_users(options["user_password"])
+            seeded_users = len(users)
+            if not options["no_orders"]:
+                self._seed_orders(users["user2"])
+                self._seed_basket(users["user1"])
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -115,10 +138,15 @@ class Command(BaseCommand):
     def _clear(self):
         User = get_user_model()
         test_usernames = [u["username"] for u in TEST_USERS]
+        # Users first (cascades to profile, basket, orders and payments).
         User.objects.filter(username__in=test_usernames).delete()
+        # OrderItem protects Product, so any remaining order must go before products.
+        Order.objects.all().delete()
         Product.objects.all().delete()
         Category.objects.all().delete()
-        self.stdout.write(self.style.WARNING("Existing catalog and test users deleted."))
+        self.stdout.write(
+            self.style.WARNING("Existing orders, catalog and test users deleted.")
+        )
 
     def _seed_catalog(self):
         rng = random.Random(42)  # deterministic demo data
@@ -170,3 +198,72 @@ class Command(BaseCommand):
             profile.save()
             users[user.username] = user
         return users
+
+    # ---- demo basket and orders -------------------------------------------
+
+    @staticmethod
+    def _pick_lines(rng, count, min_stock, max_qty, exclude=()):
+        """Pick `count` distinct products with enough stock and a quantity each.
+
+        Quantity never exceeds the stock, and is at most half of it for orders so
+        some stock is always left for manual testing.
+        """
+        pool = list(
+            Product.objects.filter(is_active=True, stock__gte=min_stock)
+            .exclude(pk__in=exclude)
+            .order_by("id")
+        )
+        chosen = rng.sample(pool, min(count, len(pool)))
+        return [(p, rng.randint(1, max(1, min(max_qty, p.stock)))) for p in chosen]
+
+    def _seed_orders(self, user):
+        """paid / failed / pending orders, with stock kept consistent."""
+        if user.orders.exists():
+            self.stdout.write(f"'{user.username}' already has orders, skipping.")
+            return
+        rng = random.Random(7)
+        now = timezone.now()
+        created = 0
+        for order_status, line_count, days_ago in ORDER_PLANS:
+            lines = self._pick_lines(rng, line_count, min_stock=3, max_qty=3)
+            if not lines:
+                self.stdout.write(
+                    self.style.WARNING("Not enough products in stock to seed an order.")
+                )
+                continue
+            # Half the stock at most, so the basket seed still finds stock later.
+            lines = [(p, min(q, max(1, p.stock // 2))) for p, q in lines]
+            order = Order.objects.create(
+                user=user,
+                status=order_status,
+                total_price=sum(p.price * q for p, q in lines),
+            )
+            for product, quantity in lines:
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    product_name=product.name,
+                    unit_price=product.price,
+                    quantity=quantity,
+                )
+                # Same rules as the real flow: pending and paid orders hold the
+                # stock, a failed order has already given it back.
+                if order_status != Order.Status.FAILED:
+                    product.stock -= quantity
+                    product.save(update_fields=["stock"])
+            Order.objects.filter(pk=order.pk).update(
+                created_at=now - timedelta(days=days_ago)
+            )
+            created += 1
+        self.stdout.write(f"Created {created} orders for '{user.username}'.")
+
+    def _seed_basket(self, user):
+        """A basket with a few items; user1 has no orders, so purchase can be tested."""
+        basket, _ = Basket.objects.get_or_create(user=user)
+        if basket.items.exists() or user.orders.exists():
+            self.stdout.write(f"'{user.username}' already has a basket or orders, skipping.")
+            return
+        lines = self._pick_lines(random.Random(11), 3, min_stock=2, max_qty=3)
+        for product, quantity in lines:
+            BasketItem.objects.create(basket=basket, product=product, quantity=quantity)
+        self.stdout.write(f"Added {len(lines)} items to the basket of '{user.username}'.")
