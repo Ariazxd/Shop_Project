@@ -119,6 +119,18 @@ If you override `ZARINPAL_CALLBACK_URL`, it must now point to `/api/v1/payments/
 
 Prices are stored in Toman; they are multiplied by 10 for Zarinpal (Rial).
 
+## Project layout
+
+Every app keeps its models, admin and signals at the top and all of its API code
+in an `api/` package:
+
+```
+accounts/   models.py  admin.py  signals.py  api/{serializers,views,urls}.py
+products/   models.py  admin.py  api/{serializers,views,urls,permissions,filters}.py
+orders/     models.py  admin.py  zarinpal.py  api/{serializers,views,payment_views,urls}.py
+shop/       settings.py  urls.py   (includes accounts.api.urls, products.api.urls, orders.api.urls)
+```
+
 ## Git flow
 
 - `main`: released versions only (tagged)
