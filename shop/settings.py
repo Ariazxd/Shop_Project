@@ -111,6 +111,26 @@ SPECTACULAR_SETTINGS = {
     "SWAGGER_UI_DIST": "SIDECAR",
     "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
     "REDOC_DIST": "SIDECAR",
+    # Group endpoints by the path after /api/v1/ (auth, products, basket, ...)
+    # instead of putting everything under one "api" tag.
+    "SCHEMA_PATH_PREFIX": r"/api/v[0-9]+",
+    "TAGS": [
+        {"name": "auth", "description": "Sign up, sign in, sign out and JWT"},
+        {"name": "profile", "description": "The current user's profile"},
+        {"name": "products", "description": "Product list, detail and staff-only editing"},
+        {"name": "categories", "description": "Product categories"},
+        {"name": "favorites", "description": "Favorite products"},
+        {"name": "basket", "description": "Shopping basket"},
+        {"name": "orders", "description": "Purchase and my orders, plus the pay endpoint"},
+        {"name": "payments", "description": "Zarinpal callback (verify)"},
+    ],
+    "SWAGGER_UI_SETTINGS": {
+        "deepLinking": True,
+        "persistAuthorization": True,  # keep the token after a page reload
+        "displayOperationId": True,
+        "filter": True,  # "Filter by tag" box
+        "docExpansion": "list",
+    },
 }
 
 SIMPLE_JWT = {
