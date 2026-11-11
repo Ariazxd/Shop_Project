@@ -86,3 +86,14 @@ class ProfileSerializer(serializers.ModelSerializer):
                 setattr(instance.user, attr, value)
             instance.user.save()
         return super().update(instance, validated_data)
+
+
+# Response shapes, only used to describe the endpoints in Swagger.
+class SignUpResponseSerializer(serializers.Serializer):
+    user = SignUpSerializer()
+    token = serializers.CharField()
+
+
+class SignInResponseSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    username = serializers.CharField()

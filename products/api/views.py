@@ -7,9 +7,9 @@ from rest_framework.views import APIView
 from .filters import ProductFilter
 from ..models import Category, Favorite, Product
 from .permissions import IsAdminOrReadOnly
-from .schema import FavoriteResponseSerializer
 from .serializers import (
     CategorySerializer,
+    FavoriteResponseSerializer,
     ProductDetailSerializer,
     ProductListSerializer,
 )

@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import transaction
+from drf_yasg import openapi
 from drf_yasg.utils import no_body, swagger_auto_schema
 from rest_framework import permissions, status
 from rest_framework.generics import get_object_or_404
@@ -10,12 +11,23 @@ from products.models import Product
 
 from .. import zarinpal
 from ..models import Basket, Order, Payment
-from .schema import (
-    VERIFY_PARAMETERS,
+from .serializers import (
     DetailSerializer,
     PayOrderResponseSerializer,
     VerifyPaymentResponseSerializer,
 )
+
+# Query parameters Zarinpal adds to the callback, shown in Swagger.
+VERIFY_PARAMETERS = [
+    openapi.Parameter(
+        "Authority", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+        description="Authority returned by /pay/",
+    ),
+    openapi.Parameter(
+        "Status", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+        description="OK or NOK (sent by Zarinpal)",
+    ),
+]
 
 
 class PayOrderView(APIView):

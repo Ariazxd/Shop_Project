@@ -51,3 +51,19 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ("id", "status", "total_price", "items", "created_at")
+
+
+# Response shapes, only used to describe the pay/verify endpoints in Swagger.
+class DetailSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class PayOrderResponseSerializer(serializers.Serializer):
+    authority = serializers.CharField()
+    payment_url = serializers.URLField()
+
+
+class VerifyPaymentResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    order_id = serializers.IntegerField()
+    ref_id = serializers.CharField(required=False)
