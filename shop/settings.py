@@ -19,8 +19,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "django_filters",
-    "drf_spectacular",
-    "drf_spectacular_sidecar",  # serves the Swagger/ReDoc assets locally (no CDN)
+    "drf_yasg",
     # local apps
     "accounts",
     "products",
@@ -95,42 +94,31 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
 }
 
-SPECTACULAR_SETTINGS = {
-    "TITLE": "Shop API",
-    "DESCRIPTION": (
-        "Shop backend: accounts, products, basket, orders and Zarinpal (sandbox) "
-        "payment. Authorize with 'Bearer <access jwt>' or 'Token <key>'."
-    ),
-    "VERSION": "1.0.0",
-    "SERVE_INCLUDE_SCHEMA": False,
-    "SWAGGER_UI_DIST": "SIDECAR",
-    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
-    "REDOC_DIST": "SIDECAR",
-    # Group endpoints by the path after /api/v1/ (auth, products, basket, ...)
-    # instead of putting everything under one "api" tag.
-    "SCHEMA_PATH_PREFIX": r"/api/v[0-9]+",
-    "TAGS": [
-        {"name": "auth", "description": "Sign up, sign in, sign out and JWT"},
-        {"name": "profile", "description": "The current user's profile"},
-        {"name": "products", "description": "Product list, detail and staff-only editing"},
-        {"name": "categories", "description": "Product categories"},
-        {"name": "favorites", "description": "Favorite products"},
-        {"name": "basket", "description": "Shopping basket"},
-        {"name": "orders", "description": "Purchase and my orders, plus the pay endpoint"},
-        {"name": "payments", "description": "Zarinpal callback (verify)"},
-    ],
-    "SWAGGER_UI_SETTINGS": {
-        "deepLinking": True,
-        "persistAuthorization": True,  # keep the token after a page reload
-        "displayOperationId": True,
-        "filter": True,  # "Filter by tag" box
-        "docExpansion": "list",
+SWAGGER_SETTINGS = {
+    # Both header styles work, see the Authorize button.
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "JWT from /api/v1/auth/token/. Type: Bearer <access>",
+        },
+        "Token": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "Key from signup/signin. Type: Token <key>",
+        },
     },
+    "USE_SESSION_AUTH": False,  # the API has no session login ("Django Login" button)
+    "PERSIST_AUTH": True,  # keep the token after a page reload
+    "DEEP_LINKING": True,
+    "DISPLAY_OPERATION_ID": True,
+    "DOC_EXPANSION": "list",
 }
 
 SIMPLE_JWT = {

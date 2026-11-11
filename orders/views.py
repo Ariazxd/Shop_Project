@@ -1,6 +1,7 @@
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema
+from django.utils.decorators import method_decorator
+from drf_yasg.utils import no_body, swagger_auto_schema
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -26,11 +27,11 @@ class BasketView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(responses=BasketSerializer)
+    @swagger_auto_schema(responses={200: BasketSerializer})
     def get(self, request):
         return Response(BasketSerializer(get_basket(request.user)).data)
 
-    @extend_schema(responses={204: None})
+    @swagger_auto_schema(responses={204: "Basket emptied"})
     def delete(self, request):
         get_basket(request.user).items.all().delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -41,7 +42,9 @@ class BasketItemAddView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(request=AddToBasketSerializer, responses={201: BasketSerializer})
+    @swagger_auto_schema(
+        request_body=AddToBasketSerializer, responses={201: BasketSerializer}
+    )
     def post(self, request):
         serializer = AddToBasketSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -76,7 +79,9 @@ class BasketItemDetailView(APIView):
             basket__user=request.user,
         )
 
-    @extend_schema(request=UpdateBasketItemSerializer, responses=BasketSerializer)
+    @swagger_auto_schema(
+        request_body=UpdateBasketItemSerializer, responses={200: BasketSerializer}
+    )
     def patch(self, request, pk):
         item = self.get_item(request, pk)
         serializer = UpdateBasketItemSerializer(data=request.data)
@@ -91,7 +96,7 @@ class BasketItemDetailView(APIView):
         item.save()
         return Response(BasketSerializer(item.basket).data)
 
-    @extend_schema(request=None, responses=BasketSerializer)
+    @swagger_auto_schema(responses={200: BasketSerializer})
     def delete(self, request, pk):
         item = self.get_item(request, pk)
         basket = item.basket
@@ -99,6 +104,10 @@ class BasketItemDetailView(APIView):
         return Response(BasketSerializer(basket).data)
 
 
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(request_body=no_body, responses={201: OrderSerializer}),
+)
 class OrderListCreateView(generics.ListCreateAPIView):
     """
     GET  /api/v1/orders/  -> my orders
@@ -112,7 +121,6 @@ class OrderListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user).prefetch_related("items")
 
-    @extend_schema(request=None, responses={201: OrderSerializer})
     def create(self, request, *args, **kwargs):
         basket = get_basket(request.user)
         basket_items = list(basket.items.select_related("product"))
