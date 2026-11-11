@@ -9,8 +9,8 @@ from rest_framework.views import APIView
 
 from products.models import Product
 
-from . import zarinpal
-from .models import Basket, Order, Payment
+from .. import zarinpal
+from ..models import Basket, Order, Payment
 
 
 class DetailSerializer(serializers.Serializer):
