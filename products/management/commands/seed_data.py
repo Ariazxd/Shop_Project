@@ -10,7 +10,7 @@ from django.utils.text import slugify
 
 from accounts.models import Profile
 from orders.models import Basket, BasketItem, Order, OrderItem
-from products.models import Category, Product
+from products.models import Category, Favorite, Product
 
 CATALOG = {
     "Electronics": [
@@ -71,7 +71,7 @@ ORDER_PLANS = [
 class Command(BaseCommand):
     help = (
         "Seed the database with demo categories, products, an admin user, test "
-        "users with filled profiles, a basket and orders. Development only."
+        "users with filled profiles, favorites, a basket and orders. Development only."
     )
 
     def add_arguments(self, parser):
@@ -123,6 +123,7 @@ class Command(BaseCommand):
         else:
             users = self._seed_test_users(options["user_password"])
             seeded_users = len(users)
+            self._seed_favorites(users["user1"])
             if not options["no_orders"]:
                 self._seed_orders(users["user2"])
                 self._seed_basket(users["user1"])
@@ -267,3 +268,12 @@ class Command(BaseCommand):
         for product, quantity in lines:
             BasketItem.objects.create(basket=basket, product=product, quantity=quantity)
         self.stdout.write(f"Added {len(lines)} items to the basket of '{user.username}'.")
+
+    def _seed_favorites(self, user):
+        """Three favorite products for user1 (needs no stock, so it is not an order)."""
+        if user.favorites.exists():
+            return
+        pool = list(Product.objects.filter(is_active=True).order_by("id"))
+        for product in random.Random(5).sample(pool, min(3, len(pool))):
+            Favorite.objects.create(user=user, product=product)
+        self.stdout.write(f"Added favorites for '{user.username}'.")
