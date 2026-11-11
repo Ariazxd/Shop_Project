@@ -1,7 +1,11 @@
-from rest_framework import viewsets
+from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import generics, permissions, serializers, status, viewsets
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .filters import ProductFilter
-from .models import Category, Product
+from .models import Category, Favorite, Product
 from .permissions import IsAdminOrReadOnly
 from .serializers import (
     CategorySerializer,
@@ -46,3 +50,49 @@ class ProductViewSet(viewsets.ModelViewSet):
         if self.action == "list":
             return ProductListSerializer
         return ProductDetailSerializer
+
+
+FavoriteResponse = inline_serializer(
+    "FavoriteResponse", {"detail": serializers.CharField()}
+)
+
+
+class ProductFavoriteView(APIView):
+    """
+    POST   /api/v1/products/<id>/favorite/  -> add to my favorites (201, or 200 if already there)
+    DELETE /api/v1/products/<id>/favorite/  -> remove from my favorites (204, also if it was not there)
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(request=None, responses={201: FavoriteResponse, 200: FavoriteResponse})
+    def post(self, request, pk):
+        product = get_object_or_404(Product, pk=pk, is_active=True)
+        _, created = Favorite.objects.get_or_create(user=request.user, product=product)
+        if created:
+            return Response(
+                {"detail": "Added to favorites."}, status=status.HTTP_201_CREATED
+            )
+        return Response({"detail": "Already in favorites."})
+
+    @extend_schema(responses={204: None})
+    def delete(self, request, pk):
+        Favorite.objects.filter(user=request.user, product_id=pk).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class FavoriteListView(generics.ListAPIView):
+    """GET /api/v1/favorites/ -> my favorite products, most recently added first."""
+
+    serializer_class = ProductListSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):  # schema generation, no user
+            return Product.objects.none()
+        # Filter and order go through the same favorite row (the join is reused).
+        return (
+            Product.objects.filter(favorited_by__user=self.request.user, is_active=True)
+            .select_related("category")
+            .order_by("-favorited_by__created_at", "-favorited_by__id")
+        )
