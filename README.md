@@ -122,13 +122,13 @@ Prices are stored in Toman; they are multiplied by 10 for Zarinpal (Rial).
 ## Project layout
 
 Every app keeps its models, admin and signals at the top and all of its API code
-in an `api/` package. `schema.py` holds only what Swagger (drf-yasg) shows, such as
-the response shapes; `filters.py` is the product list filter (django-filter):
+in an `api/` package (`filters.py` is the product list filter, django-filter).
+The Swagger (drf-yasg) setup lives in `shop/schema.py`:
 
 ```
-accounts/   models.py  admin.py  signals.py  api/{serializers,views,urls,schema}.py
-products/   models.py  admin.py  api/{serializers,views,urls,permissions,filters,schema}.py
-orders/     models.py  admin.py  zarinpal.py  api/{serializers,views,payment_views,urls,schema}.py
+accounts/   models.py  admin.py  signals.py  api/{serializers,views,urls}.py
+products/   models.py  admin.py  api/{serializers,views,urls,permissions,filters}.py
+orders/     models.py  admin.py  zarinpal.py  api/{serializers,views,payment_views,urls}.py
 shop/       settings.py  urls.py  schema.py   (includes accounts.api.urls, products.api.urls, orders.api.urls)
 ```
 

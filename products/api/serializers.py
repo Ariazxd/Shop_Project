@@ -40,3 +40,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("created_at", "updated_at")
+
+
+# Response shape, only used to describe the favorite endpoint in Swagger.
+class FavoriteResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
