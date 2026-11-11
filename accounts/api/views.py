@@ -1,21 +1,12 @@
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import no_body, swagger_auto_schema
-from rest_framework import generics, permissions, serializers, status
+from rest_framework import generics, permissions, status
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .schema import SignInResponseSerializer, SignUpResponseSerializer
 from .serializers import ProfileSerializer, SignInSerializer, SignUpSerializer
-
-
-class SignUpResponseSerializer(serializers.Serializer):
-    user = SignUpSerializer()
-    token = serializers.CharField()
-
-
-class SignInResponseSerializer(serializers.Serializer):
-    token = serializers.CharField()
-    username = serializers.CharField()
 
 
 @method_decorator(

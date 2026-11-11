@@ -1,12 +1,13 @@
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import no_body, swagger_auto_schema
-from rest_framework import generics, permissions, serializers, status, viewsets
+from rest_framework import generics, permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .filters import ProductFilter
 from ..models import Category, Favorite, Product
 from .permissions import IsAdminOrReadOnly
+from .schema import FavoriteResponseSerializer
 from .serializers import (
     CategorySerializer,
     ProductDetailSerializer,
@@ -50,10 +51,6 @@ class ProductViewSet(viewsets.ModelViewSet):
         if self.action == "list":
             return ProductListSerializer
         return ProductDetailSerializer
-
-
-class FavoriteResponseSerializer(serializers.Serializer):
-    detail = serializers.CharField()
 
 
 class ProductFavoriteView(APIView):
