@@ -5,7 +5,7 @@ A Django REST Framework shop backend. API only, no templates / no frontend.
 ## Features
 
 - Sign up / sign in / sign out (token authentication) and JWT login with refresh
-- Interactive API docs: Swagger UI and ReDoc (OpenAPI schema)
+- Interactive API docs: Swagger UI and ReDoc (drf-yasg)
 - All endpoints are versioned under `/api/v1/`
 - Profile: detail, update, delete (no list endpoint)
 - Products: list, detail, create, update, delete (write access: staff only)
@@ -30,7 +30,7 @@ python manage.py runserver
 ```
 
 Then open <http://127.0.0.1:8000/swagger/> (or `/redoc/`) for the API docs. The raw
-OpenAPI schema is at `/schema/`.
+OpenAPI schema is at `/swagger.json` (or `/swagger.yaml`).
 
 Optional environment variables: `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`,
 `ZARINPAL_MERCHANT_ID`, `ZARINPAL_CALLBACK_URL`, `ZARINPAL_SANDBOX` (default `1`).
