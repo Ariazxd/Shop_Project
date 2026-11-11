@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .filters import ProductFilter
-from .models import Category, Favorite, Product
+from ..models import Category, Favorite, Product
 from .permissions import IsAdminOrReadOnly
 from .serializers import (
     CategorySerializer,
