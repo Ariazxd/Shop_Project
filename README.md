@@ -10,6 +10,7 @@ A Django REST Framework shop backend. API only, no templates / no frontend.
 - Profile: detail, update, delete (no list endpoint)
 - Products: list, detail, create, update, delete (write access: staff only)
 - Search, filter and ordering on the product list
+- Favorites (add, remove and list favorite products)
 - Basket (add, change quantity, remove, clear)
 - Purchase (basket -> order, stock is reserved)
 - Payment through Zarinpal **sandbox**
@@ -23,7 +24,7 @@ source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
 python manage.py makemigrations accounts products orders
-python manage.py migrate
+python manage.py migrate     # after pulling a new model, run both commands again
 python manage.py seed_data         # demo data, see "Demo data" below
 python manage.py runserver
 ```
@@ -53,6 +54,7 @@ python manage.py seed_data --admin-username me --admin-password secret123 --user
 | Catalog | 4 categories, 17 products. Stock is chosen with `random.Random(42)` (0, 3, 10, 25 or 50), so it is the same every run; `stock=0` is handy for `in_stock=false` |
 | Admin | `admin` / `admin12345` |
 | Test users | `user1` and `user2`, password `user12345`, with phone, address and birth date filled in |
+| Favorites | `user1` has 3 favorite products |
 | Basket | `user1` has a basket with 3 items and no orders (try update/delete, then purchase) |
 | Orders | `user2` has one `paid`, one `failed` and one `pending` order |
 
@@ -94,6 +96,8 @@ Authenticated requests send one of these headers:
 | GET | `/api/v1/products/<id>/` | product detail |
 | POST / PUT / PATCH / DELETE | `/api/v1/products/...` | staff only |
 | GET | `/api/v1/categories/` | category list |
+| POST / DELETE | `/api/v1/products/<id>/favorite/` | add / remove a favorite (login required) |
+| GET | `/api/v1/favorites/` | my favorite products, newest first |
 | GET / DELETE | `/api/v1/basket/` | show / empty basket |
 | POST | `/api/v1/basket/items/` | `product_id, quantity` |
 | PATCH / DELETE | `/api/v1/basket/items/<id>/` | change quantity / remove item |
