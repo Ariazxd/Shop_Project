@@ -1,21 +1,7 @@
 from django.contrib import admin
 from django.urls import include, path, re_path
-from drf_yasg import openapi
-from drf_yasg.views import get_schema_view
-from rest_framework import permissions
 
-schema_view = get_schema_view(
-    openapi.Info(
-        title="Shop API",
-        default_version="v1",
-        description=(
-            "Shop backend: accounts, products, favorites, basket, orders and "
-            "Zarinpal (sandbox) payment."
-        ),
-    ),
-    public=True,
-    permission_classes=[permissions.AllowAny],
-)
+from .schema import schema_view
 
 urlpatterns = [
     re_path(

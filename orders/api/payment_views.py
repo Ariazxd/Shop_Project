@@ -1,8 +1,7 @@
 from django.conf import settings
 from django.db import transaction
-from drf_yasg import openapi
 from drf_yasg.utils import no_body, swagger_auto_schema
-from rest_framework import permissions, serializers, status
+from rest_framework import permissions, status
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,21 +10,12 @@ from products.models import Product
 
 from .. import zarinpal
 from ..models import Basket, Order, Payment
-
-
-class DetailSerializer(serializers.Serializer):
-    detail = serializers.CharField()
-
-
-class PayOrderResponseSerializer(serializers.Serializer):
-    authority = serializers.CharField()
-    payment_url = serializers.URLField()
-
-
-class VerifyPaymentResponseSerializer(serializers.Serializer):
-    detail = serializers.CharField()
-    order_id = serializers.IntegerField()
-    ref_id = serializers.CharField(required=False)
+from .schema import (
+    VERIFY_PARAMETERS,
+    DetailSerializer,
+    PayOrderResponseSerializer,
+    VerifyPaymentResponseSerializer,
+)
 
 
 class PayOrderView(APIView):
@@ -74,16 +64,7 @@ class VerifyPaymentView(APIView):
     authentication_classes = []
 
     @swagger_auto_schema(
-        manual_parameters=[
-            openapi.Parameter(
-                "Authority", openapi.IN_QUERY, type=openapi.TYPE_STRING,
-                description="Authority returned by /pay/",
-            ),
-            openapi.Parameter(
-                "Status", openapi.IN_QUERY, type=openapi.TYPE_STRING,
-                description="OK or NOK (sent by Zarinpal)",
-            ),
-        ],
+        manual_parameters=VERIFY_PARAMETERS,
         responses={
             200: VerifyPaymentResponseSerializer,
             400: VerifyPaymentResponseSerializer,
