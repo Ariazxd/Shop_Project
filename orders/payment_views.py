@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import transaction
-from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
+from drf_yasg import openapi
+from drf_yasg.utils import no_body, swagger_auto_schema
 from rest_framework import permissions, serializers, status
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
@@ -12,19 +13,19 @@ from . import zarinpal
 from .models import Basket, Order, Payment
 
 
-DetailResponse = inline_serializer("DetailResponse", {"detail": serializers.CharField()})
-PayOrderResponse = inline_serializer(
-    "PayOrderResponse",
-    {"authority": serializers.CharField(), "payment_url": serializers.URLField()},
-)
-VerifyPaymentResponse = inline_serializer(
-    "VerifyPaymentResponse",
-    {
-        "detail": serializers.CharField(),
-        "order_id": serializers.IntegerField(),
-        "ref_id": serializers.CharField(required=False),
-    },
-)
+class DetailSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+
+
+class PayOrderResponseSerializer(serializers.Serializer):
+    authority = serializers.CharField()
+    payment_url = serializers.URLField()
+
+
+class VerifyPaymentResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
+    order_id = serializers.IntegerField()
+    ref_id = serializers.CharField(required=False)
 
 
 class PayOrderView(APIView):
@@ -32,9 +33,13 @@ class PayOrderView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(
-        request=None,
-        responses={200: PayOrderResponse, 400: DetailResponse, 502: DetailResponse},
+    @swagger_auto_schema(
+        request_body=no_body,
+        responses={
+            200: PayOrderResponseSerializer,
+            400: DetailSerializer,
+            502: DetailSerializer,
+        },
     )
     def post(self, request, pk):
         order = get_object_or_404(Order, pk=pk, user=request.user)
@@ -68,12 +73,21 @@ class VerifyPaymentView(APIView):
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
 
-    @extend_schema(
-        parameters=[
-            OpenApiParameter("Authority", str, description="Authority returned by /pay/"),
-            OpenApiParameter("Status", str, description="OK or NOK (sent by Zarinpal)"),
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                "Authority", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="Authority returned by /pay/",
+            ),
+            openapi.Parameter(
+                "Status", openapi.IN_QUERY, type=openapi.TYPE_STRING,
+                description="OK or NOK (sent by Zarinpal)",
+            ),
         ],
-        responses={200: VerifyPaymentResponse, 400: VerifyPaymentResponse},
+        responses={
+            200: VerifyPaymentResponseSerializer,
+            400: VerifyPaymentResponseSerializer,
+        },
     )
     def get(self, request):
         authority = request.query_params.get("Authority", "")

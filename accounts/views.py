@@ -1,4 +1,5 @@
-from drf_spectacular.utils import extend_schema, inline_serializer
+from django.utils.decorators import method_decorator
+from drf_yasg.utils import no_body, swagger_auto_schema
 from rest_framework import generics, permissions, serializers, status
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
@@ -7,21 +8,24 @@ from rest_framework.views import APIView
 from .serializers import ProfileSerializer, SignInSerializer, SignUpSerializer
 
 
-SignUpResponse = inline_serializer(
-    "SignUpResponse",
-    {"user": SignUpSerializer(), "token": serializers.CharField()},
-)
-SignInResponse = inline_serializer(
-    "SignInResponse",
-    {"token": serializers.CharField(), "username": serializers.CharField()},
-)
+class SignUpResponseSerializer(serializers.Serializer):
+    user = SignUpSerializer()
+    token = serializers.CharField()
 
 
+class SignInResponseSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    username = serializers.CharField()
+
+
+@method_decorator(
+    name="post",
+    decorator=swagger_auto_schema(responses={201: SignUpResponseSerializer}),
+)
 class SignUpView(generics.CreateAPIView):
     serializer_class = SignUpSerializer
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(responses={201: SignUpResponse})
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -36,7 +40,9 @@ class SignUpView(generics.CreateAPIView):
 class SignInView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(request=SignInSerializer, responses={200: SignInResponse})
+    @swagger_auto_schema(
+        request_body=SignInSerializer, responses={200: SignInResponseSerializer}
+    )
     def post(self, request):
         serializer = SignInSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
@@ -48,12 +54,16 @@ class SignInView(APIView):
 class SignOutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(request=None, responses={204: None})
+    @swagger_auto_schema(request_body=no_body, responses={204: "Token deleted"})
     def post(self, request):
         Token.objects.filter(user=request.user).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@method_decorator(
+    name="delete",
+    decorator=swagger_auto_schema(responses={204: "Account deleted"}),
+)
 class ProfileView(generics.RetrieveUpdateDestroyAPIView):
     """
     Detail / update / delete for the *current* user's profile.
@@ -67,7 +77,6 @@ class ProfileView(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         return self.request.user.profile
 
-    @extend_schema(responses={204: None})
     def destroy(self, request, *args, **kwargs):
         # Deleting the profile deletes the account (profile cascades with the user).
         request.user.delete()

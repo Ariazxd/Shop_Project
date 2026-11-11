@@ -1,5 +1,5 @@
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, inline_serializer
+from drf_yasg.utils import no_body, swagger_auto_schema
 from rest_framework import generics, permissions, serializers, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -52,9 +52,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         return ProductDetailSerializer
 
 
-FavoriteResponse = inline_serializer(
-    "FavoriteResponse", {"detail": serializers.CharField()}
-)
+class FavoriteResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()
 
 
 class ProductFavoriteView(APIView):
@@ -65,7 +64,10 @@ class ProductFavoriteView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
-    @extend_schema(request=None, responses={201: FavoriteResponse, 200: FavoriteResponse})
+    @swagger_auto_schema(
+        request_body=no_body,
+        responses={201: FavoriteResponseSerializer, 200: FavoriteResponseSerializer},
+    )
     def post(self, request, pk):
         product = get_object_or_404(Product, pk=pk, is_active=True)
         _, created = Favorite.objects.get_or_create(user=request.user, product=product)
@@ -75,7 +77,7 @@ class ProductFavoriteView(APIView):
             )
         return Response({"detail": "Already in favorites."})
 
-    @extend_schema(responses={204: None})
+    @swagger_auto_schema(responses={204: "Removed"})
     def delete(self, request, pk):
         Favorite.objects.filter(user=request.user, product_id=pk).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
