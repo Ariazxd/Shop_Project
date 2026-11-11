@@ -119,6 +119,8 @@ class OrderListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):  # schema generation, no user
+            return Order.objects.none()
         return Order.objects.filter(user=self.request.user).prefetch_related("items")
 
     def create(self, request, *args, **kwargs):
@@ -169,4 +171,6 @@ class OrderDetailView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):  # schema generation, no user
+            return Order.objects.none()
         return Order.objects.filter(user=self.request.user).prefetch_related("items")
